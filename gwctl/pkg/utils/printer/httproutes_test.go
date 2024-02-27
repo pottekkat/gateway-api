@@ -29,10 +29,10 @@ import (
 	gatewayv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"sigs.k8s.io/gateway-api/gwctl/pkg/cmd/utils"
 	"sigs.k8s.io/gateway-api/gwctl/pkg/common"
 	"sigs.k8s.io/gateway-api/gwctl/pkg/common/resourcehelpers"
 	"sigs.k8s.io/gateway-api/gwctl/pkg/effectivepolicy"
+	"sigs.k8s.io/gateway-api/gwctl/pkg/utils"
 )
 
 func TestHTTPRoutesPrinter_PrintDescribeView(t *testing.T) {

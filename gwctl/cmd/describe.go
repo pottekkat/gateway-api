@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package describe
+package cmd
 
 import (
 	"context"
@@ -25,39 +25,45 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-	"sigs.k8s.io/gateway-api/gwctl/pkg/cmd/utils"
-	"sigs.k8s.io/gateway-api/gwctl/pkg/cmd/utils/printer"
 	"sigs.k8s.io/gateway-api/gwctl/pkg/common/resourcehelpers"
 	"sigs.k8s.io/gateway-api/gwctl/pkg/effectivepolicy"
 	"sigs.k8s.io/gateway-api/gwctl/pkg/policymanager"
+	"sigs.k8s.io/gateway-api/gwctl/pkg/utils"
+	"sigs.k8s.io/gateway-api/gwctl/pkg/utils/printer"
 )
 
-type describeFlags struct {
-	namespace     string
-	allNamespaces bool
-}
-
-func NewDescribeCommand(params *utils.CmdParams) *cobra.Command {
-	flags := &describeFlags{}
+func NewDescribeCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "describe {policies|httproutes|gateways|gatewayclasses|backends} RESOURCE_NAME",
 		Short: "Show details of a specific resource or group of resources",
 		Args:  cobra.RangeArgs(1, 2),
 		Run: func(cmd *cobra.Command, args []string) {
-			runDescribe(args, params, flags)
+			params := getParams(kubeConfigPath)
+			runDescribe(cmd, args, params)
 		},
 	}
-	cmd.Flags().StringVarP(&flags.namespace, "namespace", "n", "default", "")
-	cmd.Flags().BoolVarP(&flags.allNamespaces, "all-namespaces", "A", false, "If present, list requested resources from all namespaces.")
+	cmd.Flags().StringVarP(&namespaceFlag, "namespace", "n", "default", "")
+	cmd.Flags().BoolVarP(&allNamespacesFlag, "all-namespaces", "A", false, "If present, list requested resources from all namespaces.")
 
 	return cmd
 }
 
-func runDescribe(args []string, params *utils.CmdParams, flags *describeFlags) {
+func runDescribe(cmd *cobra.Command, args []string, params *utils.CmdParams) {
 	kind := args[0]
-	ns := flags.namespace
-	if flags.allNamespaces {
+	ns, err := cmd.Flags().GetString("namespace")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read flag \"namespace\": %v\n", err)
+		os.Exit(1)
+	}
+
+	allNs, err := cmd.Flags().GetBool("all-namespaces")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read flag \"all-namespaces\": %v\n", err)
+		os.Exit(1)
+	}
+
+	if allNs {
 		ns = ""
 	}
 
@@ -91,12 +97,14 @@ func runDescribe(args []string, params *utils.CmdParams, flags *describeFlags) {
 			var err error
 			httpRoutes, err = resourcehelpers.ListHTTPRoutes(context.TODO(), params.K8sClients, ns)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to list HTTPRoute resources: %v\n", err)
+				os.Exit(1)
 			}
 		} else {
 			httpRoute, err := resourcehelpers.GetHTTPRoute(context.TODO(), params.K8sClients, ns, args[1])
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to get HTTPRoute resource: %v\n", err)
+				os.Exit(1)
 			}
 			httpRoutes = []gatewayv1beta1.HTTPRoute{httpRoute}
 		}
@@ -108,12 +116,14 @@ func runDescribe(args []string, params *utils.CmdParams, flags *describeFlags) {
 			var err error
 			gws, err = resourcehelpers.ListGateways(context.TODO(), params.K8sClients, ns)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to list Gateway resources: %v\n", err)
+				os.Exit(1)
 			}
 		} else {
 			gw, err := resourcehelpers.GetGateways(context.TODO(), params.K8sClients, ns, args[1])
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to get Gateway resource: %v\n", err)
+				os.Exit(1)
 			}
 			gws = []gatewayv1beta1.Gateway{gw}
 		}
@@ -125,12 +135,14 @@ func runDescribe(args []string, params *utils.CmdParams, flags *describeFlags) {
 			var err error
 			gwClasses, err = resourcehelpers.ListGatewayClasses(context.TODO(), params.K8sClients)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to list GatewayClass resources: %v\n", err)
+				os.Exit(1)
 			}
 		} else {
 			gwc, err := resourcehelpers.GetGatewayClass(context.TODO(), params.K8sClients, args[1])
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to get GatewayClass resource: %v\n", err)
+				os.Exit(1)
 			}
 			gwClasses = []gatewayv1beta1.GatewayClass{gwc}
 		}
@@ -146,12 +158,14 @@ func runDescribe(args []string, params *utils.CmdParams, flags *describeFlags) {
 			var err error
 			backendsList, err = resourcehelpers.ListBackends(context.TODO(), params.K8sClients, resourceType, ns)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to list Backend resources: %v\n", err)
+				os.Exit(1)
 			}
 		} else {
 			backend, err := resourcehelpers.GetBackend(context.TODO(), params.K8sClients, resourceType, ns, args[1])
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to get Backend resource: %v\n", err)
+				os.Exit(1)
 			}
 			backendsList = []unstructured.Unstructured{backend}
 		}

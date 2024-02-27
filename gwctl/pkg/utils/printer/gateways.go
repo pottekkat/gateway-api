@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/yaml"
@@ -47,11 +48,13 @@ func (gp *GatewaysPrinter) PrintDescribeView(ctx context.Context, gws []gatewayv
 	for i, gw := range gws {
 		allPolicies, err := gp.EPC.Gateways.GetDirectlyAttachedPolicies(ctx, gw.Namespace, gw.Name)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "failed to get directly attached policies: %v\n", err)
+			os.Exit(1)
 		}
 		effectivePolicies, err := gp.EPC.Gateways.GetEffectivePolicies(ctx, gw.Namespace, gw.Name)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "failed to get effective policies: %v\n", err)
+			os.Exit(1)
 		}
 
 		views := []gatewayDescribeView{
@@ -77,7 +80,8 @@ func (gp *GatewaysPrinter) PrintDescribeView(ctx context.Context, gws []gatewayv
 		for _, view := range views {
 			b, err := yaml.Marshal(view)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to marshal to yaml: %v\n", err)
+				os.Exit(1)
 			}
 			fmt.Fprint(gp.Out, string(b))
 		}

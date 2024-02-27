@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
@@ -46,11 +47,13 @@ func (bp *BackendsPrinter) PrintDescribeView(ctx context.Context, backendsList [
 	for i, backend := range backendsList {
 		directlyAttachedPolicies, err := bp.EPC.Backends.GetDirectlyAttachedPolicies(ctx, backend)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "failed to get directly attached policies: %v\n", err)
+			os.Exit(1)
 		}
 		effectivePolicies, err := bp.EPC.Backends.GetEffectivePolicies(ctx, backend)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "failed to get directly effective policies: %v\n", err)
+			os.Exit(1)
 		}
 
 		views := []backendDescribeView{
@@ -75,7 +78,8 @@ func (bp *BackendsPrinter) PrintDescribeView(ctx context.Context, backendsList [
 		for _, view := range views {
 			b, err := yaml.Marshal(view)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to marshal to yaml: %v\n", err)
+				os.Exit(1)
 			}
 			fmt.Fprint(bp.Out, string(b))
 		}

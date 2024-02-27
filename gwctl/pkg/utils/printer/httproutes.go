@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"text/tabwriter"
 
@@ -69,11 +70,13 @@ func (hp *HTTPRoutesPrinter) PrintDescribeView(ctx context.Context, httpRoutes [
 	for i, httpRoute := range httpRoutes {
 		directlyAttachedPolicies, err := hp.EPC.HTTPRoutes.GetDirectlyAttachedPolicies(ctx, httpRoute.Namespace, httpRoute.Name)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "failed to get directly attached policies: %v\n", err)
+			os.Exit(1)
 		}
 		effectivePolicies, err := hp.EPC.HTTPRoutes.GetEffectivePolicies(ctx, httpRoute.Namespace, httpRoute.Name)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "failed to get effective policies: %v\n", err)
+			os.Exit(1)
 		}
 
 		views := []httpRouteDescribeView{
@@ -100,7 +103,8 @@ func (hp *HTTPRoutesPrinter) PrintDescribeView(ctx context.Context, httpRoutes [
 		for _, view := range views {
 			b, err := yaml.Marshal(view)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to marshal to yaml: %v\n", err)
+				os.Exit(1)
 			}
 			fmt.Fprint(hp.Out, string(b))
 		}

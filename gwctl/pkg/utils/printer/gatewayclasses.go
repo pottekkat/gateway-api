@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/yaml"
@@ -46,7 +47,8 @@ func (gcp *GatewayClassesPrinter) PrintDescribeView(ctx context.Context, gwClass
 	for i, gwc := range gwClasses {
 		directlyAttachedPolicies, err := gcp.EPC.GatewayClasses.GetDirectlyAttachedPolicies(ctx, gwc.Name)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "failed to get directly attached policies: %v\n", err)
+			os.Exit(1)
 		}
 
 		policyRefs := policymanager.ToPolicyRefs(directlyAttachedPolicies)
@@ -69,7 +71,8 @@ func (gcp *GatewayClassesPrinter) PrintDescribeView(ctx context.Context, gwClass
 		for _, view := range views {
 			b, err := yaml.Marshal(view)
 			if err != nil {
-				panic(err)
+				fmt.Fprintf(os.Stderr, "failed to marshal to yaml: %v\n", err)
+				os.Exit(1)
 			}
 			fmt.Fprint(gcp.Out, string(b))
 		}
